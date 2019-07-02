@@ -3,9 +3,10 @@
 import torch
 import torch.optim as optim
 import torch.nn as nn
+import os
 
 from layers import EncoderRNN, DecoderRNN
-from utils import word_dict
+from utils import prepare_data
 import train_model
 
 
@@ -30,8 +31,12 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 PAD_token = 0 # padding
 SOS_token = 1 # start
 EOS_token = 2 # end
+corpus_name = "cornell movie-dialogs corpus"
+save_dir = os.path.join("F:\\code\\py3.6\\simple_dl\\chatbot\\data", "model")
+loadFilename = None
 
-voc = word_dict.Voc()
+voc, pairs, input_variable, lengths, target_variable, mask, max_target_len = prepare_data.HandleData().getBatchData()
+
 
 print('Building encoder and decoder ...')
 # Initialize word embeddings

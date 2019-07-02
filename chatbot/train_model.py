@@ -2,8 +2,9 @@
 
 import torch
 import torch.nn as nn
-
+import os
 import random
+
 MAX_LENGTH = 10
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 SOS_token = "SOS"
