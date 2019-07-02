@@ -24,10 +24,12 @@ test_dataset = torchvision.datasets.MNIST(root='/media/ptface02/H1/dataSet/stand
 
 load_train = torch.utils.data.DataLoader(dataset=train_dataset,
                                          batch_size=batch_size,
-                                         shuffle=True)
+                                         shuffle=True,
+                                         num_workers=2)
 load_test = torch.utils.data.DataLoader(dataset=test_dataset,
                                          batch_size=batch_size,
-                                         shuffle=False)
+                                         shuffle=False,
+                                        num_workers=2)
 
 
 
@@ -50,7 +52,7 @@ class NN(nn.Module):
         x = torch.relu(self.fc1(x))
         out = self.fc2(x)
         # return torch.log_softmax(out, dim=1)
-        return out
+        return torch.softmax(out, dim=1)
 
 # 损失函数和优化器
 model = NN()
