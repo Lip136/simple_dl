@@ -3,9 +3,10 @@
 import torch
 import torch.optim as optim
 import torch.nn as nn
-import sys
-sys.path.append("/home/ptface02/PycharmProjects/documents/simple_dl-git")
-from model import EncoderRNN, DecoderRNN, train_model
+
+from layers import EncoderRNN, DecoderRNN
+from utils import word_dict
+import train_model
 
 
 
@@ -26,6 +27,11 @@ print_every = 1
 save_every = 500
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+PAD_token = 0 # padding
+SOS_token = 1 # start
+EOS_token = 2 # end
+
+voc = word_dict.Voc()
 
 print('Building encoder and decoder ...')
 # Initialize word embeddings

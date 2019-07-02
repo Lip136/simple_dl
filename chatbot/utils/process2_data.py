@@ -1,9 +1,9 @@
 # encoding:utf-8
 import unicodedata
 import re
-from word_dict import Voc
+import word_dict
 import os
-MAX_LENGTH = 10
+
 
 def unicodeToAscii(s):
     return "".join(
@@ -13,7 +13,7 @@ def unicodeToAscii(s):
 
 def normailzeString(s):
     s = unicodeToAscii(s.lower().strip())
-    # s = re.sub(r"[.!?]", r" ", s)
+    s = re.sub(r"[.!?]", r" ", s)
     s = re.sub(r"[^a-zA-Z.!?]+", r" ", s)
     s = re.sub(r"\s+", r" ", s).strip()
     return s
@@ -25,7 +25,7 @@ def readVocs(datafile, corpus_name):
     lines = open(datafile, encoding="utf-8").read().strip().split("\n")
 
     pairs = [[normailzeString(s) for s in l.split("\t")] for l in lines]
-    voc = Voc(corpus_name)
+    voc = word_dict.Voc(corpus_name)
     return voc, pairs
 
 # 选择小于最大长度的句子
@@ -34,7 +34,7 @@ def filterPair(p):
 def filterPairs(pairs):
     return [pair for pair in pairs if filterPair(pair)]
 
-def loadPrepareData(corpus_name, datafile, save_dir):
+def loadPrepareData(corpus_name, datafile):
     print("Start preparing training data ...")
     voc, pairs = readVocs(datafile, corpus_name)
     print("Read {!s} sentence pairs".format(len(pairs)))
@@ -48,18 +48,8 @@ def loadPrepareData(corpus_name, datafile, save_dir):
     print("Counting words:", voc.num_words)
     return voc, pairs
 
-corpus_name = "cornell movie-dialogs corpus"
-corpus = os.path.join("../data", corpus_name)
-datafile = os.path.join(corpus, "formatted_movie_lines.txt")
-save_dir = os.path.join("../data", "save")
-voc, pairs = loadPrepareData(corpus_name, datafile, save_dir)
 
-print("\npairs:")
-for pair in pairs[:10]:
-    print(pair)
-
-MIN_COUNT = 3    # Minimum word count threshold for trimming
-
+# 过滤掉带需要修剪词的对
 def trimRareWords(voc, pairs, MIN_COUNT):
     # Trim words used under the MIN_COUNT from the voc
     voc.trim(MIN_COUNT)
@@ -87,6 +77,15 @@ def trimRareWords(voc, pairs, MIN_COUNT):
 
     print("Trimmed from {} pairs to {}, {:.4f} of total".format(len(pairs), len(keep_pairs), len(keep_pairs) / len(pairs)))
     return keep_pairs
+
+MAX_LENGTH = 10
+corpus_name = "cornell movie-dialogs corpus"
+corpus = os.path.join("../data", corpus_name)
+datafile = os.path.join(corpus, "formatted_movie_lines.txt")
+save_dir = os.path.join("../data", "model")
+voc, pairs = loadPrepareData(corpus_name, datafile)
+
+MIN_COUNT = 3    # Minimum word count threshold for trimming
 
 pairs = trimRareWords(voc, pairs, MIN_COUNT)
 

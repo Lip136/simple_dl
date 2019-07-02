@@ -1,16 +1,13 @@
 # encoding:utf-8
-import torch
-from torch.jit import script, trace
-import torch.nn as nn
-from torch import optim
-import torch.nn.functional as F
+'''
+功能：将电影对话的原文件提取为一对一对的句子，用制表符分割
+输入：movie_lines.txt
+输出：formatted_movie_lines.txt
+'''
 import csv
-import random
 import os
 import codecs
 
-USE_CUDA = torch.cuda.is_available()
-device = torch.device("cuda" if USE_CUDA else "cpu")
 
 corpus_name = "cornell movie-dialogs corpus"
 corpus = os.path.join("../data", corpus_name)
