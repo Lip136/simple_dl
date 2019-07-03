@@ -1,32 +1,29 @@
 # encoding:utf-8
-import os
+
 import itertools
 import torch
-import word_dict
-import random
 
-PAD_token = 0 # padding
-SOS_token = 1 # start
-EOS_token = 2 # end
+class BatchManager():
 
-class HandleData:
+    def __init__(self, PAD_token = 0, SOS_token = 1, EOS_token = 2):
+        self.PAD_token = PAD_token
+        self.SOS_token = SOS_token
+        self.EOS_token = EOS_token
 
-    def __init__(self):
-        pass
 
     def indexesFromSentence(self, voc, sentence):
-        return [voc.word2index[word] for word in sentence.split(' ')] + [EOS_token]
+        return [voc.word2index[word] for word in sentence.split(' ')] + [self.EOS_token]
 
 
-    def zeroPadding(self, l, fillvalue=PAD_token):
-        return list(itertools.zip_longest(*l, fillvalue=fillvalue))
+    def zeroPadding(self, l):
+        return list(itertools.zip_longest(*l, fillvalue=self.PAD_token))
 
-    def binaryMatrix(self, l, value=PAD_token):
+    def binaryMatrix(self, l):
         m = []
         for i, seq in enumerate(l):
             m.append([])
             for token in seq:
-                if token == PAD_token:
+                if token == self.PAD_token:
                     m[i].append(0)
                 else:
                     m[i].append(1)
@@ -61,24 +58,6 @@ class HandleData:
         output, mask, max_target_len = self.outputVar(output_batch, voc)
         return inp, lengths, output, mask, max_target_len
 
-    def getBatchData(self):
-        MAX_LENGTH = 10
-        corpus_name = "cornell movie-dialogs corpus"
-        corpus = os.path.join("F:\\code\\py3.6\\simple_dl\\chatbot\\data", corpus_name)
-        datafile = os.path.join(corpus, "formatted_movie_lines.txt")
-        save_dir = os.path.join("F:\\code\\py3.6\\simple_dl\\chatbot\\data", "model")
-        voc, pairs = word_dict.DataSet(datafile, corpus_name).loadPrepareData()
 
 
-        # Example for validation
-        small_batch_size = 5
-        batches = self.batch2TrainData(voc, [random.choice(pairs) for _ in range(small_batch_size)])
-        input_variable, lengths, target_variable, mask, max_target_len = batches
-
-        return voc, pairs, input_variable, lengths, target_variable, mask, max_target_len
-        # print("input_variable:", input_variable)
-        # print("lengths:", lengths)
-        # print("target_variable:", target_variable)
-        # print("mask:", mask)
-        # print("max_target_len:", max_target_len)
 

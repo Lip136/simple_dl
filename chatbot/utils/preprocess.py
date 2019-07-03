@@ -1,20 +1,20 @@
 # encoding:utf-8
 import unicodedata
 import re
-PAD_token = 0 # padding
-SOS_token = 1 # start
-EOS_token = 2 # end
+import jieba
 
-
-class Voc:
-    def __init__(self, name):
+class Voc():
+    def __init__(self, name, PAD_token = 0, SOS_token = 1, EOS_token = 2):
         self.name = name
+        self.PAD_token = PAD_token  # padding
+        self.SOS_token = SOS_token  # start
+        self.EOS_token = EOS_token  # end
+
         self.trimmed = False
         self.word2index = {}
         self.word2count = {}
-        self.index2word = {PAD_token: "PAD", SOS_token: "SOS", EOS_token: "EOS"}
+        self.index2word = {self.PAD_token: "PAD", self.SOS_token: "SOS", self.EOS_token: "EOS"}
         self.num_words = 3
-
 
     def addSentence(self, sentence):
         for word in sentence.split(" "):
@@ -47,18 +47,20 @@ class Voc:
        # Reinitialize dictionaries
         self.word2index = {}
         self.word2count = {}
-        self.index2word = {PAD_token: "PAD", SOS_token: "SOS", EOS_token: "EOS"}
+        self.index2word = {self.PAD_token: "PAD", self.SOS_token: "SOS", self.EOS_token: "EOS"}
         self.word2count = 3
 
         for word in keep_words:
             self.addWord(word)
 
-MAX_LENGTH = 10
-MIN_COUNT = 3
-class DataSet:
-    def __init__(self, datafile, corpus_name):
+
+
+class DataSet():
+    def __init__(self, datafile, corpus_name, MAX_LENGTH = 10, MIN_COUNT = 3):
         self.corpus_name = corpus_name
         self.datafile = datafile
+        self.MAX_LENGTH = MAX_LENGTH
+        self.MIN_COUNT = MIN_COUNT
 
     def unicodeToAscii(self, s):
         return "".join(
@@ -66,25 +68,29 @@ class DataSet:
             if unicodedata.category(c) != 'Mn'
         )
 
-    def normailzeString(self, s):
-        s = self.unicodeToAscii(s.lower().strip())
+    def normalizeString(self, s):
+        # s = self.unicodeToAscii(s.lower().strip())
         s = re.sub(r"[.!?]", r" ", s)
         s = re.sub(r"[^a-zA-Z.!?]+", r" ", s)
         s = re.sub(r"\s+", r" ", s).strip()
         return s
+
+    # 要分词呀,忘记了
+    def seg_sentence(self, s):
+        return " ".join(list(jieba.cut(s)))
 
     def readVocs(self):
         print("Reading lines...")
 
         lines = open(self.datafile, encoding="utf-8").read().strip().split("\n")
 
-        pairs = [[self.normailzeString(s) for s in l.split("\t")] for l in lines]
+        pairs = [[self.seg_sentence(s) for s in l.split("\t")] for l in lines]
         voc = Voc(self.corpus_name)
         return voc, pairs
 
     # 选择小于最大长度的句子
-    def filterPair(slef, p):
-        return len(p[0].split(' ')) < MAX_LENGTH and len(p[1].split(' ')) < MAX_LENGTH
+    def filterPair(self, p):
+        return len(p[0].split(' ')) < self.MAX_LENGTH and len(p[1].split(' ')) < self.MAX_LENGTH
 
     def filterPairs(self, pairs):
         return [pair for pair in pairs if self.filterPair(pair)]
@@ -104,9 +110,10 @@ class DataSet:
         return voc, pairs
 
     # 过滤掉带需要修剪词的对
-    def trimRareWords(voc, pairs, MIN_COUNT):
+    # 因为出错而,所以不调用这个函数
+    def trimRareWords(self, voc, pairs):
         # Trim words used under the MIN_COUNT from the voc
-        voc.trim(MIN_COUNT)
+        voc.trim(self.MIN_COUNT)
         # Filter out pairs with trimmed words
         keep_pairs = []
         for pair in pairs:

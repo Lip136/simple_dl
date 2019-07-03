@@ -11,7 +11,7 @@
 '''
 
 import torch.nn as nn
-
+import torch
 class EncoderGRU(nn.Module):
     def __init__(self, hidden_size, embedding, n_layers=1, dropout=0):
         super(EncoderGRU, self).__init__()

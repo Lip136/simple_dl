@@ -43,7 +43,7 @@ class Attn(nn.Module):
         elif self.method == "dot":
             attn_energies = self.dot_score(hidden, encoder_outputs)
 
-        attn_energies = attn_energies.t()
+        attn_energies = attn_energies.t() # 转置
 
         return torch.softmax(attn_energies, dim=1).unsqueeze(1)
 
