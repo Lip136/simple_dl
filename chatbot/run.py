@@ -113,7 +113,7 @@ class PrepareDate():
                     decoder_input, encoder_hidden, encoder_outputs
                 )
                 # TODO teacher forcing: next input is current target
-                decoder_input = target_variable[t].view(1, -1)
+                decoder_input = target_variable[t].view(1, -1) #重点
 
                 mask_loss, n_Total = self.maskNLLLoss(decoder_output, target_variable[t], mask[t])
                 loss += mask_loss
