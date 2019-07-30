@@ -28,7 +28,7 @@ def make_batch(sentence):
         input_batch.append(np.eye(n_class)[input])
         target_batch.append(target)
 
-    return torch.Tensor(input_batch), torch.LongTensor(target_batch)
+    return torch.tensor(input_batch).float(), torch.tensor(target_batch)
 
 class BiLSTM(nn.Module):
     def __init__(self):

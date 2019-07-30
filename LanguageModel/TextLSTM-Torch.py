@@ -24,7 +24,7 @@ def make_batch(seq_data):
         input_batch.append(np.eye(n_class)[input])
         target_batch.append(target)
 
-    return torch.Tensor(input_batch), torch.LongTensor(target_batch)
+    return torch.tensor(input_batch).float(), torch.tensor(target_batch)
 
 input_batch, target_batch = make_batch(seq_data)
 

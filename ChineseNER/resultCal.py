@@ -2,23 +2,52 @@
 
 import codecs
 
-def calculate(x, y, id2word, id2tag, res=[]):
-    entity = []
-    for j in range(len(x)):
-        if x[j] == 0 or y[j] == 0:
-            continue
-        if id2tag[y[j]][0] == 'B':
-            entity = [id2word[x[j]] + '/' + id2tag[y[j]]]
-        elif id2tag[y[j]][0] == 'M' and len(entity) != 0 and entity[-1].split('/')[1][1:] == id2tag[y[j]][1:]:
-            entity.append(id2word[x[j]] + '/' + id2tag[y[j]])
-        elif id2tag[y[j]][0] == 'E' and len(entity) != 0 and entity[-1].split('/')[1][1:] == id2tag[y[j]][1:]:
-            entity.append(id2word[x[j]] + '/' + id2tag[y[j]])
-            entity.append(str(j))
-            res.append(entity)
-            entity = []
-        else:
-            entity = []
-    return res
+# x=sentence (32, 60), y=tags (32, 60)
+def calculate(x, y, id2word, id2tag):
+
+    # 每一个batch里面，每一个句子里的词属于什么，其实我们是根据y先把label取出来，然后再去取x中的词语
+    x = x.cpu().numpy()
+    y = y.cpu().numpy()
+    batch_entity = []
+    for i in range(len(x)):
+        # 每一个batch下的句子
+        sen_entity = []
+        entity = []
+        for j in range(len(x[i])):
+
+            # 每句子下的词
+            if x[i][j] == 0 or y[i][j] == 0: # word=" ", tag=" "
+                continue
+            if id2tag[y[i][j]][0] == 'B':
+                entity = [id2word[x[i][j]] + '/' + id2tag[y[i][j]]]
+            elif id2tag[y[i][j]][0] == 'M' and len(entity) != 0 and entity[-1].split('/')[1][1:] == id2tag[y[i][j]][1:]:
+                entity.append(id2word[x[i][j]] + '/' + id2tag[y[i][j]])
+            elif id2tag[y[i][j]][0] == 'E' and len(entity) != 0 and entity[-1].split('/')[1][1:] == id2tag[y[i][j]][1:]:
+                entity.append(id2word[x[i][j]] + '/' + id2tag[y[i][j]])
+                sen_entity.append(entity)
+                entity = []
+            else:
+                entity = []
+        batch_entity.append(sen_entity)
+
+    return batch_entity
+
+
+    # for j in range(len(x)):
+    #     if x[j] == 0 or y[j] == 0:
+    #         continue
+    #     if id2tag[y[j]][0] == 'B':
+    #         entity = [id2word[x[j]] + '/' + id2tag[y[j]]]
+    #     elif id2tag[y[j]][0] == 'M' and len(entity) != 0 and entity[-1].split('/')[1][1:] == id2tag[y[j]][1:]:
+    #         entity.append(id2word[x[i][j]] + '/' + id2tag[y[i][j]])
+    #     elif id2tag[y[j]][0] == 'E' and len(entity) != 0 and entity[-1].split('/')[1][1:] == id2tag[y[j]][1:]:
+    #         entity.append(id2word[x[j]] + '/' + id2tag[y[j]])
+    #         entity.append(str(j))
+    #         res.append(entity)
+    #         entity = []
+    #     else:
+    #         entity = []
+    # return res
 
 
 def calculate3(x, y, id2word, id2tag, res=[]):

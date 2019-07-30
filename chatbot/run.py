@@ -1,4 +1,11 @@
 # encoding:utf-8
+'''
+训练阶段：1.初始化解码器和编码器
+        2.获得batch数据： train()函数是训练的主函数
+        3.一个epoch的训练：trainIters()函数
+        4.StartTrain()
+        
+'''
 import torchsnooper
 import torch
 import torch.optim as optim
@@ -7,7 +14,7 @@ import os
 import random
 
 from layers import EncoderRNN, DecoderRNN
-from utils import preprocess, HandleData
+from utils import vocData, getBatch
 
 # Configure training/optimization
 model_name = 'cb_model'
@@ -16,13 +23,13 @@ hidden_size = 500
 encoder_n_layers = 1
 decoder_n_layers = 2
 dropout = 0.1
-batch_size = 64
+batch_size = 128
 clip = 50.0
 teacher_forcing_ratio = 1.0
 learning_rate = 0.0001
 decoder_learning_ratio = 5.0
 n_iteration = 4000
-print_every = 1
+print_every = 10
 save_every = 500
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 MAX_LENGTH = 10
@@ -34,9 +41,9 @@ MAX_LENGTH = 10
 # datafile = os.path.join(corpus, "formatted_movie_lines.txt")
 
 
-corpus_name = "xiaohuangji-dialogs corpus"
-corpus = os.path.join("/media/ptface02/H1/dataSet/中文聊天语料/chaotbot_corpus_Chinese/clean_chat_corpus")
-datafile = os.path.join(corpus, "xiaohuangji.tsv")
+corpus_name = "qingyun"
+filePath = os.path.join("/media/ptface02/H1/dataSet/中文聊天语料/chaotbot_corpus_Chinese/clean_chat_corpus")
+datafile = os.path.join(filePath, "{}.tsv".format(corpus_name))
 
 save_dir = os.path.join("/home/ptface02/PycharmProjects/documents/simple_dl-git/chatbot/data", "model")
 
@@ -44,18 +51,22 @@ save_dir = os.path.join("/home/ptface02/PycharmProjects/documents/simple_dl-git/
 
 # Set checkpoint to load from; set to None if starting from scratch
 checkpoint_iter = 4000
-loadFilename = os.path.join(save_dir, model_name, corpus_name,
-                            '{}_{}_{}'.format(encoder_n_layers, decoder_n_layers, hidden_size),
-                            '{}_checkpoint.tar'.format(checkpoint_iter))
-checkpoint = torch.load(loadFilename)
+# loadFilename = os.path.join(save_dir, model_name, corpus_name,
+#                             '{}_{}_{}'.format(encoder_n_layers, decoder_n_layers, hidden_size),
+#                             '{}_checkpoint.tar'.format(checkpoint_iter))
+
 
 class PrepareDate():
-    def __init__(self, SOS_token = 1):
-        self.handleData = HandleData.BatchManager()
-        # 加载数据
-        self.preprocessData = preprocess.DataSet(datafile, corpus_name)
-        self.voc, self.pairs = self.preprocessData.loadPrepareData()
+    def __init__(self, SOS_token = 1, loadFilename=None):
+        self.handleData = getBatch.BatchManager()
         self.SOS_token = SOS_token
+        # 加载数据
+        self.dataSet = vocData.DataSet(datafile, corpus_name)
+        self.voc, self.pairs = self.dataSet.loadData("./data")
+
+        self.loadFilename = loadFilename
+        if self.loadFilename:
+            self.checkpoint = torch.load(self.loadFilename)
 
     def exampleBatch(self):
         # Example for validation
@@ -79,6 +90,7 @@ class PrepareDate():
 
     # 单次训练迭代
     # 1.teacher_forcing_ratio; 2.gradient clipping
+    # @torchsnooper.snoop()
     def train(self, input_variable, lengths, target_variable, mask, max_target_len, encoder, decoder,
               enmedding, encoder_optimizer, decoder_optimizer, batch_size, clip, max_length=MAX_LENGTH):
         # Zero gradients
@@ -143,40 +155,57 @@ class PrepareDate():
 
         return sum(print_losses) / n_totals
 
-    def trainIters(self, model_name, voc, pairs, encoder, decoder, encoder_optimizer, decoder_optimizer,
+    def trainIters(self, model_name, encoder, decoder, encoder_optimizer, decoder_optimizer,
                    embedding, encoder_n_layers, decoder_n_layers, save_dir, n_iteration, batch_size,
-                   print_every, save_every, clip, corpus_name, loadFilename):
+                   print_every, save_every, clip, corpus_name):
         # Load batches for each iteration
-        training_batches = [self.handleData.batch2TrainData(voc, [random.choice(pairs) for _ in range(batch_size)])
+        # 选择数据相当于：并没有选择所有的数据，每次随机选batch_size个数据，一共选n_iteration次
+        # 如果数据量本来就过大，那肯定一次数据都选不完：10w数据, 选了4000*32=12.8w, 这才训练一个epoch
+        # 怪不得我的结果不太好
+
+        training_batches = [self.handleData.batch2TrainData(self.voc, [random.choice(self.pairs) for _ in range(batch_size)])
                             for _ in range(n_iteration)]
+
+        num_batch = len(self.pairs) // batch_size
+        print(num_batch)
+        start_batch = 0
+        training_batches_epoch = []
+        for i in range(num_batch):
+            training_batches_epoch.append(self.handleData.batch2TrainData(self.voc, self.pairs[start_batch: start_batch + batch_size]))
+            start_batch += batch_size
+
         # Initializations
         print("Initializaing ...")
         start_iteration = 1
         print_loss = 0
-        if loadFilename:
-            start_iteration = checkpoint['iteration'] + 1
+        # TODO:接着训练
+        if self.loadFilename:
+            start_iteration = self.checkpoint['iteration'] + 1
 
         # Training loop
         print("Training ...")
         for iteration in range(start_iteration, n_iteration + 1):
-            training_batch = training_batches[iteration - 1]
-            input_variable, lengths, target_variable, mask, max_target_len = training_batch
+            for training_batch in training_batches_epoch:
+                # training_batch = training_batches[iteration - 1]
+                input_variable, lengths, target_variable, mask, max_target_len = training_batch
 
-            loss = self.train(input_variable, lengths, target_variable, mask, max_target_len, encoder,
-                         decoder, embedding, encoder_optimizer, decoder_optimizer, batch_size, clip)
-            print_loss += loss
+                loss = self.train(input_variable, lengths, target_variable, mask, max_target_len, encoder,
+                             decoder, embedding, encoder_optimizer, decoder_optimizer, batch_size, clip)
+                print_loss += loss
 
+            # 每print_every打印一次loss数据
             if iteration % print_every == 0:
-                print_loss_avg = print_loss / print_every
+                print_loss_avg = print_loss / (print_every * num_batch)
                 print("Iteration:{}\tPercent complete:{:.1f}%\tAverage loss:{:.4f}".format(
                     iteration, iteration / n_iteration * 100, print_loss_avg
                 ))
                 print_loss = 0
-
+            # 每save_every保存一次模型
             if iteration % save_every == 0:
                 directory = os.path.join(save_dir, model_name, corpus_name, "{}_{}_{}".format(
                     encoder_n_layers, decoder_n_layers, hidden_size
                 ))
+                print_loss_avg = print_loss / (print_every * num_batch)
                 if not os.path.exists(directory):
                     os.makedirs(directory)
 
@@ -186,43 +215,38 @@ class PrepareDate():
                     'de': decoder.state_dict(),
                     'en_opt': encoder_optimizer.state_dict(),
                     'de_opt': decoder_optimizer.state_dict(),
-                    'loss': loss,
-                    "voc_dict": voc.__dict__,
+                    'loss': print_loss_avg,
+                    "voc_dict": self.voc.__dict__,
                     "embedding": embedding.state_dict()
                 }, os.path.join(directory, '{}_{}.tar'.format(iteration, 'checkpoint')))
 
     # TODO: training
     # 初始化解码器和编码器
     def initializeED(self):
-        # Set checkpoint to load from; set to None if starting from scratch
-        # checkpoint_iter = 4000
-        # loadFilename = os.path.join(save_dir, model_name, corpus_name,
-        #                            '{}_{}_{}'.format(encoder_n_layers, decoder_n_layers, hidden_size),
-        #                            '{}_checkpoint.tar'.format(checkpoint_iter))
-        # checkpoint = torch.load(loadFilename, map_location=torch.device('cuda'))
 
         # Load model if a loadFilename is provided
-        if loadFilename:
+        if self.loadFilename:
             # If loading on same machine the model was trained on
             # checkpoint = torch.load(loadFilename)
             # If loading a model trained on GPU to CPU
             # checkpoint = torch.load(loadFilename, map_location=torch.device('cpu'))
-            encoder_sd = checkpoint['en']
-            decoder_sd = checkpoint['de']
-            encoder_optimizer_sd = checkpoint['en_opt']
-            decoder_optimizer_sd = checkpoint['de_opt']
-            embedding_sd = checkpoint['embedding']
-            self.voc.__dict__ = checkpoint['voc_dict']
+            encoder_sd = self.checkpoint['en']
+            decoder_sd = self.checkpoint['de']
+            encoder_optimizer_sd = self.checkpoint['en_opt']
+            decoder_optimizer_sd = self.checkpoint['de_opt']
+            embedding_sd = self.checkpoint['embedding']
+            self.voc.__dict__ = self.checkpoint['voc_dict']
 
         print('Building encoder and decoder ...')
         # Initialize word embeddings
         self.embedding = nn.Embedding(self.voc.num_words, hidden_size)
-        if loadFilename:
+        if self.loadFilename:
             self.embedding.load_state_dict(embedding_sd)
+
         # Initialize encoder & decoder models
         self.encoder = EncoderRNN.EncoderGRU(hidden_size, self.embedding, encoder_n_layers, dropout)
         self.decoder = DecoderRNN.DecoderGRU(attn_model, self.embedding, hidden_size, self.voc.num_words, decoder_n_layers, dropout)
-        if loadFilename:
+        if self.loadFilename:
             self.encoder.load_state_dict(encoder_sd)
             self.decoder.load_state_dict(decoder_sd)
         # Use appropriate device
@@ -233,6 +257,7 @@ class PrepareDate():
     # training
     # @torchsnooper.snoop()
     def StartTrain(self):
+        # self.exampleBatch()
         # 初始化
         self.initializeED()
         # Ensure dropout layers are in train mode
@@ -245,9 +270,9 @@ class PrepareDate():
 
         # Run training iterations
         print("Starting Training!")
-        self.trainIters(model_name, self.voc, self.pairs, self.encoder, self.decoder, encoder_optimizer, decoder_optimizer,
+        self.trainIters(model_name, self.encoder, self.decoder, encoder_optimizer, decoder_optimizer,
                         self.embedding, encoder_n_layers, decoder_n_layers, save_dir, n_iteration, batch_size,
-                               print_every, save_every, clip, corpus_name, loadFilename)
+                               print_every, save_every, clip, corpus_name)
 
     # TODO: eval
 
@@ -289,7 +314,7 @@ class PrepareDate():
         tokens, scores = self.GreedySearchDecoder(input_batch, lengths, max_length)
 
         # indexes -> words
-        decoded_words = [self.voc.index2word[token.item()] for token in tokens]
+        decoded_words = [self.voc.id2word[token.item()] for token in tokens]
         return decoded_words
 
     def evaluateInput(self):
@@ -301,7 +326,7 @@ class PrepareDate():
                 # Check if it is quit case
                 if input_sentence == 'q' or input_sentence == 'quit': break
                 # Normalize sentence
-                input_sentence = self.preprocessData.seg_sentence(input_sentence)
+                input_sentence = self.dataSet.seg_sentence(input_sentence)
                 # Evaluate sentence
                 output_words = self.evaluate(input_sentence)
                 # Format and print response sentence

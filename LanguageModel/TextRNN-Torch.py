@@ -34,8 +34,8 @@ def make_batch(sentences):
 
 # to Torch.Tensor
 input_batch, target_batch = make_batch(sentences)
-input_batch = torch.Tensor(input_batch)
-target_batch = torch.LongTensor(target_batch)
+input_batch = torch.tensor(input_batch).float()
+target_batch = torch.tensor(target_batch)
 
 class TextRNN(nn.Module):
     def __init__(self):
