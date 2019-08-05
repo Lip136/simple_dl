@@ -10,7 +10,7 @@ def calculate(x, y, id2word, id2tag):
     y = y.cpu().numpy()
     batch_entity = []
     for i in range(len(x)):
-        # 每一个batch下的句子
+        # i是每一个句子
         sen_entity = []
         entity = []
         for j in range(len(x[i])):

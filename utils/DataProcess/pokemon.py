@@ -104,8 +104,8 @@ class Pokemon(Dataset):
 def main():
     import visdom
     viz = visdom.Visdom()
-    # db = Pokemon('/home/ptface02/PycharmProjects/documents/crawler/Picture/weiboPic', 224, 'train')
-    db = Pokemon(r'G:\BaiduNetdiskDownload\crawlGather\Picture\weiboPic', 224, 'train')
+    db = Pokemon('/home/ptface02/PycharmProjects/documents/crawler/Picture/weiboPic', 224, 'train')
+    # db = Pokemon(r'G:\BaiduNetdiskDownload\crawlGather\Picture\weiboPic', 224, 'train')
     sample, label = next(iter(db))
     print(sample.shape, label)
     viz.image(db.denormalize(sample), win='sample_x', opts=dict(title='sample_x'))

@@ -32,7 +32,7 @@ class EncoderGRU(nn.Module):
         outputs, hidden = self.gru(packed, hidden)
         # 去掉padding
         outputs, _ = nn.utils.rnn.pad_packed_sequence(outputs)
-        # 计算双向GRU输出的和
+        # 计算双向GRU输出的和,原本outputs.shape=(input_lengths, batch_size, 2*hidden_size)
         outputs = outputs[:, :, :self.hidden_size] + outputs[:, :, self.hidden_size:]
         return outputs, hidden
 
