@@ -86,11 +86,21 @@ class Pokemon(Dataset):
         # idx~[0, len(images)]
         img, label = self.images[idx], self.labels[idx]
 
+        # 变换照片的方式：Flip(翻转), Rotate(旋转), Scale(缩放), Crop(裁剪)
         tf = transforms.Compose([
             lambda x:Image.open(x).convert('RGB'), # string path -> image data
-            transforms.Resize((int(self.resize*1.25), int(self.resize*1.25))),
+            # Flip
+            transforms.RandomHorizontalFlip(),
+            transforms.RandomVerticalFlip(),
+            # Rotate
             transforms.RandomRotation(15),
+            transforms.RandomRotation([0, 90, 180, 270]), # 随机从中选一个旋转
+            # Scale
+            transforms.Resize((int(self.resize*1.25), int(self.resize*1.25))),
+            # Crop
             transforms.CenterCrop(self.resize),
+            transforms.RandomCrop([28, 28]),
+            
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                  std=[0.229, 0.224, 0.225])

@@ -1,4 +1,6 @@
 *.pyc
+*.pkl
 data/
+cifar/
 weights/
 model/

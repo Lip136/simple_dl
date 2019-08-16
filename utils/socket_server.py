@@ -19,7 +19,7 @@ class socket_text(object):
         import errno
         try:
             ret = self.sk.recv(2048)
-            print(ret)
+            print(ret.decode('utf-8'))
         except SocketError as e:
             if e.errno != errno.ECONNRESET:
                 raise
@@ -37,5 +37,5 @@ class socket_text(object):
         self.sk.close()
 
 if __name__ == "__main__":
-    sk = socket_text('10.3.27.36', 8089)
-    sk.send("baby是什么意思")
+    sk = socket_text('10.3.10.194', 8089)
+    sk.send("baby是什么意思".encode('utf-8'))

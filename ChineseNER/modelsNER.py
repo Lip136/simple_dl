@@ -53,6 +53,7 @@ class BiLSTM_CRF(nn.Module):
         embeds = self.word_embeds(sentence) # len(sentence) * batch_size * embedding_dim
         lstm_out, self.hidden = self.lstm(embeds, self.hidden)
         lstm_feats = self.hidden2tag(lstm_out)
+        # lstm_feats = self.hidden2tag(torch.cat([self.hidden[-2], self.hidden[-1]], dim=1))
         return lstm_feats
     # @torchsnooper.snoop()
     def _viterbi_decode(self, feats):
