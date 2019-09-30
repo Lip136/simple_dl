@@ -37,5 +37,12 @@ class socket_text(object):
         self.sk.close()
 
 if __name__ == "__main__":
-    sk = socket_text('10.3.10.194', 8089)
-    sk.send("baby是什么意思".encode('utf-8'))
+
+    # questions = ["baby是什么意思", "baby有什么词组和句子", "baby和boy可以组成什么短语", "mother和baby可以组成什么句子"]
+    # for question in questions:
+    #     sk = socket_text('10.3.10.194', 8089)
+    #     sk.send(question.encode('utf-8'))
+    sk = socket_text('10.3.27.36', 8086)
+    sk.send("周星驰演过什么电影".encode('utf-8'))
+
+

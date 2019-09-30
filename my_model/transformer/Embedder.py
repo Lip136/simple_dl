@@ -50,8 +50,15 @@ class PositionalEncoder(nn.Module):
         pe = torch.zeros(max_seq_len, d_model)
         for pos in range(max_seq_len):
             for i in range(0, d_model, 2):
-                pe[pos, i] = math.sin(pos/(10000**((2*i)/d_model)))
-                pe[pos, i+1] = math.cos(pos/(10000**((2*(i+1))/d_model)))
+                pe[pos, i] = math.sin(pos /(10000**(i/d_model)))
+                pe[pos, i+1] = math.cos(pos /(10000**((i+1)/d_model)))
+
+        # 使用exp和log
+        # div_term = torch.exp(torch.arange(0, d_model, 2).float() * -(math.log(10000) / d_model))
+        # position = torch.arange(0, max_seq_len).unsqueeze(dim=1)
+        # pe[:, 0::2] = torch.sin(position * div_term)
+        # pe[:, 1::2] = torch.cos(position * div_term)
+
 
         pe = pe.unsqueeze(0) #由于词向量输入的时候有batch_size，所以这里加入一个维度
         self.register_buffer('pe', pe)

@@ -24,9 +24,9 @@ class MultiHeadsAttention(nn.Module):
     def forward(self, q, k, v, mask=None):
         batch_szie = q.size(0)
 
-        k = self.k_linear(k).view(batch_szie, -1, self.heads, self.d_k)
-        q = self.q_linear(q).view(batch_szie, -1, self.heads, self.d_k)
-        v = self.v_linear(v).view(batch_szie, -1, self.heads, self.d_k)
+        k = self.k_linear(k).view(batch_szie, -1, self.heads, self.d_k) # 查询向量，类似便利贴
+        q = self.q_linear(q).view(batch_szie, -1, self.heads, self.d_k) # 键向量，类似文件夹
+        v = self.v_linear(v).view(batch_szie, -1, self.heads, self.d_k) # 值向量，类似文件夹里面的东西
 
         # transpose to get dimensions bs * h * sl * d_model
         k = k.transpose(1, 2)
