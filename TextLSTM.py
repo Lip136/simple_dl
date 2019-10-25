@@ -57,7 +57,7 @@ model = TextLSTM().to(device)
 # print(len(params), params[0].size())
 
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr=0.001)
+optimizer = optim.Adam(model.parameters(), lr=0.001, weight_decay=0.2)
 
 # Training
 for epoch in range(5000):

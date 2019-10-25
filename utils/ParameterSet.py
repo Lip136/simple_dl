@@ -1,6 +1,7 @@
 # encoding:utf-8
 '''
 功能：一个可以引入的parameter集合
+个人认为这个方式不太好, 用单独的json文件会比较好
 '''
 import argparse
 

@@ -1,0 +1,30 @@
+2019-10-14 10:53:21,189 - qingyun corpus - INFO - {"emb_dim": 200, "module_name": "gru", "dropout": 0.3, "teacher_forcing_ratio": 1.0, "clip": 50.0, "encoder_n_layers": 1, "attn_model": "dot", "decoder_learning_ratio": 5.0, "hidden_dim": 128, "decoder_n_layers": 2}
+2019-10-14 10:55:31,552 - qingyun corpus - INFO - Building encoder and decoder ...
+2019-10-14 10:55:43,586 - qingyun corpus - INFO - Building optimizers ...
+2019-10-14 10:55:43,587 - qingyun corpus - INFO - 
+2019-10-14 10:55:43,587 - qingyun corpus - INFO - Starting Training!
+2019-10-14 10:55:43,587 - qingyun corpus - INFO - Initializaing ...
+2019-10-14 10:55:43,587 - qingyun corpus - INFO - Training ...
+2019-10-14 11:07:04,451 - qingyun corpus - INFO - epoch:10	Percent complete:1.0%	Average loss:4.2472	Average dev loss:0.3669
+2019-10-14 11:18:31,032 - qingyun corpus - INFO - epoch:20	Percent complete:2.0%	Average loss:2.9277	Average dev loss:0.3268
+2019-10-14 11:29:54,087 - qingyun corpus - INFO - epoch:30	Percent complete:3.0%	Average loss:2.2140	Average dev loss:0.3142
+2019-10-14 11:41:17,070 - qingyun corpus - INFO - epoch:40	Percent complete:4.0%	Average loss:1.7526	Average dev loss:0.3117
+2019-10-14 11:52:34,917 - qingyun corpus - INFO - epoch:50	Percent complete:5.0%	Average loss:1.4368	Average dev loss:0.3153
+2019-10-14 12:03:48,215 - qingyun corpus - INFO - epoch:60	Percent complete:6.0%	Average loss:1.2139	Average dev loss:0.3225
+2019-10-14 12:15:04,646 - qingyun corpus - INFO - epoch:70	Percent complete:7.0%	Average loss:1.0496	Average dev loss:0.3301
+2019-10-14 12:26:38,436 - qingyun corpus - INFO - epoch:80	Percent complete:8.0%	Average loss:0.9235	Average dev loss:0.3380
+2019-10-14 12:37:57,362 - qingyun corpus - INFO - epoch:90	Percent complete:9.0%	Average loss:0.8243	Average dev loss:0.3477
+2019-10-14 12:48:57,454 - qingyun corpus - INFO - epoch:100	Percent complete:10.0%	Average loss:0.7440	Average dev loss:0.3560
+2019-10-14 13:00:28,795 - qingyun corpus - INFO - epoch:110	Percent complete:11.0%	Average loss:0.6774	Average dev loss:0.3650
+2019-10-14 13:11:45,466 - qingyun corpus - INFO - epoch:120	Percent complete:12.0%	Average loss:0.6215	Average dev loss:0.3734
+2019-10-14 13:23:01,808 - qingyun corpus - INFO - epoch:130	Percent complete:13.0%	Average loss:0.5734	Average dev loss:0.3816
+2019-10-14 13:34:25,301 - qingyun corpus - INFO - epoch:140	Percent complete:14.0%	Average loss:0.5316	Average dev loss:0.3913
+2019-10-14 13:45:33,249 - qingyun corpus - INFO - epoch:150	Percent complete:15.0%	Average loss:0.4956	Average dev loss:0.3998
+2019-10-14 13:56:54,608 - qingyun corpus - INFO - epoch:160	Percent complete:16.0%	Average loss:0.4637	Average dev loss:0.4081
+2019-10-14 14:08:00,649 - qingyun corpus - INFO - epoch:170	Percent complete:17.0%	Average loss:0.4360	Average dev loss:0.4161
+2019-10-14 14:19:12,452 - qingyun corpus - INFO - epoch:180	Percent complete:18.0%	Average loss:0.4110	Average dev loss:0.4245
+2019-10-14 14:30:40,256 - qingyun corpus - INFO - epoch:190	Percent complete:19.0%	Average loss:0.3881	Average dev loss:0.4325
+2019-10-14 14:41:54,314 - qingyun corpus - INFO - epoch:200	Percent complete:20.0%	Average loss:0.3682	Average dev loss:0.4394
+2019-10-14 14:53:04,026 - qingyun corpus - INFO - epoch:210	Percent complete:21.0%	Average loss:0.3492	Average dev loss:0.4477
+2019-10-14 15:04:12,706 - qingyun corpus - INFO - epoch:220	Percent complete:22.0%	Average loss:0.3329	Average dev loss:0.4553
+2019-10-14 15:15:32,143 - qingyun corpus - INFO - epoch:230	Percent complete:23.0%	Average loss:0.3174	Average dev loss:0.4629

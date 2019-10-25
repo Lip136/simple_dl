@@ -25,7 +25,9 @@ class ResBlk(nn.Module):
     def forward(self, x):
         out = torch.relu(self.b_norm1(self.conv1(x)))
         out = self.b_norm2(self.conv2(out))
+        print("x", x.shape, "out-", out.shape)
         out = self.extra(x) + out
+        print("x", self.extra(x).shape)
         return out
 
 class ResNet18(nn.Module):
