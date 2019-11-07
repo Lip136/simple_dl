@@ -102,10 +102,11 @@ class Chatbot(object):
         # 采用加载词向量的方式
         # 出现RuntimeError: cuDNN error: CUDNN_STATUS_BAD_PARAM
         # 原因是: numpy默认的float是float64位的,而我们需要的是float32位
-        embedding_path = "/home/ptface02/PycharmProjects/data/tencent/Tencent_AILab_ChineseEmbedding.txt"
+        embedding_path = "/home/ptface02/PycharmProjects/data/embed_data/wiki"
         self.voc.load_pretrained_embeddings(embedding_path)
-        # pre_embedding = torch.from_numpy(self.voc.embeddings).float()
-        pre_embedding = self.voc.embeddings
+
+        pre_embedding = torch.from_numpy(self.voc.embeddings)
+        # pre_embedding = self.voc.embeddings
         print(self.voc.size(), pre_embedding.shape)
         self.embedding = nn.Embedding.from_pretrained(pre_embedding, freeze=False)
         # nn.init.kaiming_normal_()凯明大神的初始化方法

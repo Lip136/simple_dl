@@ -28,7 +28,8 @@ class Vocab(object):
         self.initial_tokens = initial_tokens if initial_tokens is not None else []
         self.initial_tokens.extend([self.PAD_token, self.SOS_token, self.EOS_token, self.unk_token])
         for token in self.initial_tokens:
-            self.add(token)
+            self.add(token, mode="input")
+            self.add(token, mode="label")
 
         if filename is not None:
             self.load_from_file(filename)
@@ -47,16 +48,17 @@ class Vocab(object):
         Args:
             file_path: a file with a word in each line
         """
-        import jieba
+        sentence = []
+        tmp = []
         for line in open(file_path, 'r'):
-            sentence = []
-            sentence.append()
-            sentence = re.sub("[ \n,.]", "", line)
-            for token in tokens:
-                if token == "\t":
-                    continue
-                else:
-                    self.add(token)
+            if line == "\n":
+                sentence.append(tmp)
+                tmp = []
+            else:
+                data = line.strip().split("\t")
+                tmp.append(data)
+                self.add(data[0], mode="input")
+                self.add(data[1], mode="label")
 
     def get_id(self, token):
         """
@@ -85,27 +87,34 @@ class Vocab(object):
         except KeyError:
             return self.unk_token
 
-    def add(self, token, cnt=1):
+    def add(self, token, mode="input", cnt=1):
         """
         adds the token to vocab
         Args:
             token: a string
             cnt: a num indicating the count of the token to add, default is 1
         """
-        token = token.lower() if self.lower else token
-        if token in self.token2id:
-            idx = self.token2id[token]
-        else:
-            idx = len(self.id2token)
-            self.id2token[idx] = token
-            self.token2id[token] = idx
-        if cnt > 0:
-            if token in self.token_cnt:
-                self.token_cnt[token] += cnt
+        if mode == "input":
+            if token in self.token2id:
+                idx = self.token2id[token]
             else:
-                self.token_cnt[token] = cnt
-        return idx
-
+                idx = len(self.id2token)
+                self.id2token[idx] = token
+                self.token2id[token] = idx
+            if cnt > 0:
+                if token in self.token_cnt:
+                    self.token_cnt[token] += cnt
+                else:
+                    self.token_cnt[token] = cnt
+            return idx
+        elif mode == "label":
+            if token in self.tag2id:
+                idx = self.tag2id[token]
+            else:
+                idx = len(self.id2tag)
+                self.id2tag[idx] = token
+                self.tag2id[token] = idx
+            return idx
     def filter_tokens_by_cnt(self, min_cnt):
         """
         filter the tokens in vocab by their count

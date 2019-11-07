@@ -1,23 +1,31 @@
-#encoding=utf-8
+# encoding:utf-8
+"""
+功能:
+1.获取id
+2.获取token
+3.获取size
+4.句子映射
+"""
 
 import numpy as np
 import re, os
 import torch
 from torch import nn
 from tqdm import tqdm
+import pickle
+import utils
 
 class Vocab(object):
     """
     Implements a vocabulary to store the tokens in the data, with their corresponding embeddings.
     """
-    def __init__(self, filename=None, initial_tokens=None, lower=False):
+    def __init__(self, filenames=None, initial_tokens=None, lower=False):
         self.id2token = {}
         self.token2id = {}
         self.token_cnt = {}
         self.lower = lower
 
-        self.embed_dim = None
-        self.embeddings = None
+
 
         self.PAD_token = "<pad>"
         self.SOS_token = "<start>"
@@ -25,12 +33,15 @@ class Vocab(object):
         self.unk_token = '<unk>'
 
         self.initial_tokens = initial_tokens if initial_tokens is not None else []
-        self.initial_tokens.extend([self.PAD_token, self.SOS_token, self.EOS_token, self.unk_token])
+        # self.initial_tokens.extend([self.PAD_token, self.SOS_token, self.EOS_token, self.unk_token])
         for token in self.initial_tokens:
             self.add(token)
 
-        if filename is not None:
-            self.load_from_file(filename)
+        if filenames is not None:
+            for filename in filenames:
+                self.load_from_file(filename)
+            self.audio_mean, self.audio_std = utils.get_standard_params(filenames)
+
 
     def size(self):
         """
@@ -46,17 +57,12 @@ class Vocab(object):
         Args:
             file_path: a file with a word in each line
         """
-        import jieba
-        for line in open(file_path, 'r'):
-            # sentence = line.rstrip('\n')
-            # tokens = re.sub("[,.?]", "", sentence).split()
-            sentence = re.sub("[ \n,.]", "", line)
-            tokens = jieba.cut(sentence)
+
+        with open(file_path, 'r') as f:
+            sentence = f.readline()
+            tokens = "".join(sentence.strip().split())
             for token in tokens:
-                if token == "\t":
-                    continue
-                else:
-                    self.add(token)
+                self.add(token)
 
     def get_id(self, token):
         """
@@ -121,54 +127,6 @@ class Vocab(object):
         for token in filtered_tokens:
             self.add(token, cnt=0)
 
-    def randomly_init_embeddings(self, embed_dim):
-        """
-        randomly initializes the embeddings for each token
-        Args:
-            embed_dim: the size of the embedding for each token
-        """
-        self.embed_dim = embed_dim
-        self.embeddings = torch.randn(self.size(), self.embed_dim)
-        nn.init.xavier_normal_(self.embeddings)  # math.sqrt(6 / (self.size() * self.embed_dim))
-        for token in [self.PAD_token, self.SOS_token, self.EOS_token, self.unk_token]:
-            self.embeddings[self.get_id(token)] = torch.zeros([self.embed_dim])
-
-
-    def load_pretrained_embeddings(self, embedding_path):
-        """
-        loads the pretrained embeddings from embedding_path,
-        tokens not in pretrained embeddings will be filtered
-        Args:
-            embedding_path: the path of the pretrained embedding file
-        """
-        vocab_path = os.path.join(embedding_path, "vocab.txt")
-        for file in os.listdir(embedding_path):
-            if os.path.splitext(file)[-1] == ".npy":
-                embed_path = os.path.join(embedding_path, file)
-
-        emb_vocab = []
-        with open(vocab_path, "r") as f:
-            for line in f.readlines():
-                emb_vocab.append(line.strip())
-        emb = np.load(embed_path)
-        self.embed_dim = emb.shape[1]
-        self.embeddings = np.random.randn(self.size(), self.embed_dim).astype(np.float32)
-        no_vec = 0
-        # 这是错误的, token和id没有对上
-        for token in tqdm(self.token2id.keys()):
-            # 初始的tokens词向量都为0
-            if token in self.initial_tokens:
-                self.embeddings[self.get_id(token)] = np.zeros(self.embed_dim, dtype=np.float32)
-                # torch.tensor(np.zeros(self.embed_dim))
-            elif token in emb_vocab:
-                self.embeddings[self.get_id(token)] = emb[emb_vocab.index(token)]
-            else:
-                no_vec += 1
-                continue
-        vocab_emb = "vocab_emb.npy"
-        np.save(vocab_emb, self.embeddings)
-        print("有{}个不在词向量文件中,保存词向量文件{}".format(no_vec, vocab_emb))
-
 
     def convert_to_ids(self, tokens):
         """
@@ -199,6 +157,11 @@ class Vocab(object):
 
 
 if __name__ == "__main__":
-    vocab = Vocab("../data/qingyun.tsv")
+    import glob
+    filenames = glob.glob(os.path.join("data", "*.trn"))
+    vocab = Vocab(filenames, initial_tokens=["_"])
     print(vocab.size())
-    vocab.load_pretrained_embeddings("/home/ptface02/PycharmProjects/data/embed_data/wiki")
+    print(vocab.audio_mean, vocab.audio_std)
+    with open("THCHS-30_new.vocab", "wb") as f:
+        pickle.dump(vocab, f)
+
