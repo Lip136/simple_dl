@@ -2,7 +2,7 @@
 '''
 训练阶段：1.初始化解码器和编码器
         2.获得batch数据： train()函数是训练的主函数
-        3.训练：trainIters()函数   
+        3.训练：trainIters()函数
 '''
 import torchsnooper
 import torch
@@ -25,8 +25,21 @@ import logging
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-
+# 适合多个模型的导入
+def import_class(module_path, module_name, class_name):
+    """
+    Load class dynamically
+    Args:
+      module_path: The current path of the module
+      module_name: The module name
+      class_name: The name of class in the import module
+    Return:
+      Return the attribute value of the class object
+    """
+    if module_path:
+        sys.path.append(module_path)
+    module = __import__(module_name)
+    return getattr(module, class_name)
 
 class Chatbot(object):
     """

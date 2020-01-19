@@ -4,12 +4,12 @@
         "attn_model": "general",
         "emb_dim": 200,
         "hidden_dim": 128,
-        "dropout":0.1,
+        "dropout":0.6,
         "encoder_n_layers": 1,
         "decoder_n_layers": 2,
         "clip": 50.0,
         "teacher_forcing_ratio": 1.0,
-        "decoder_learning_ratio": 5.0
+        "decoder_learning_ratio": 0.5
     },
     "loss": {
         "module_name": "softmax_cross_entropy_loss",
@@ -17,7 +17,7 @@
     },
     "optimizer": {
         "class_name": "AdamOptimizer",
-        "learning_rate" : 0.0001
+        "learning_rate" : 5e-5
     },
     "dict_size": 3,
     "task_mode": "qingyun corpus",
@@ -26,9 +26,9 @@
     "MAX_LENGTH": 20,
     "log_path": "data/log.txt",
     "epoch_num": 1000,
-    "print_num":1,
+    "print_num":10,
     "model_path": "data/model/",
-    "model_file": "infer54_checkpoint.bin",
+    "model_file": "54_checkpoint.tar",
     "batch_size": 128,
     "num_threads": 4
 }

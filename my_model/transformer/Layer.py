@@ -11,14 +11,19 @@ from MultiHeadsAttention import MultiHeadsAttention
 
 
 class EncoderLayer(nn.Module):
-    def __init__(self, d_model, heads, dropout=0.1):
+    def __init__(self, config):
         super(EncoderLayer, self).__init__()
-        self.norm_1 = Norm(d_model)
-        self.norm_2 = Norm(d_model)
-        self.attn = MultiHeadsAttention(heads, d_model)
-        self.ff = FeedForward(d_model)
-        self.dropout_1 = nn.Dropout(dropout)
-        self.dropout_2 = nn.Dropout(dropout)
+        # 参数
+        self.emb_dim = config["emb_dim"]
+        self.heads = config["heads"]
+        self.dropout = config["dropout"]
+        # 模型
+        self.norm_1 = Norm(self.emb_dim)
+        self.norm_2 = Norm(self.emb_dim)
+        self.attn = MultiHeadsAttention(self.heads, self.emb_dim)
+        self.ff = FeedForward(self.emb_dim)
+        self.dropout_1 = nn.Dropout(self.dropout)
+        self.dropout_2 = nn.Dropout(self.dropout)
 
     def forward(self, x, mask):
         x1 = self.norm_1(x)
@@ -28,19 +33,24 @@ class EncoderLayer(nn.Module):
         return x
 
 class DecoderLayer(nn.Module):
-    def __init__(self, d_model, heads, dropout=0.1):
+    def __init__(self, config):
         super(DecoderLayer, self).__init__()
-        self.norm_1 = Norm(d_model)
-        self.norm_2 = Norm(d_model)
-        self.norm_3 = Norm(d_model)
+        # 参数
+        self.emb_dim = config["emb_dim"]
+        self.heads = config["heads"]
+        self.dropout = config["dropout"]
+        # 模型
+        self.norm_1 = Norm(self.emb_dim)
+        self.norm_2 = Norm(self.emb_dim)
+        self.norm_3 = Norm(self.emb_dim)
 
-        self.dropout_1 = nn.Dropout(dropout)
-        self.dropout_2 = nn.Dropout(dropout)
-        self.dropout_3 = nn.Dropout(dropout)
+        self.dropout_1 = nn.Dropout(self.dropout)
+        self.dropout_2 = nn.Dropout(self.dropout)
+        self.dropout_3 = nn.Dropout(self.dropout)
 
-        self.attn_1 = MultiHeadsAttention(heads, d_model)
-        self.attn_2 = MultiHeadsAttention(heads, d_model)
-        self.ff = FeedForward(d_model).cuda()
+        self.attn_1 = MultiHeadsAttention(self.heads, self.emb_dim)
+        self.attn_2 = MultiHeadsAttention(self.heads, self.emb_dim)
+        self.ff = FeedForward(self.emb_dim).to("cuda")
 
     def forward(self, x, e_outputs, src_mask, trg_mask):
         x1 = self.norm_1(x)

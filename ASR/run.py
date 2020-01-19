@@ -1,60 +1,81 @@
 # encoding=utf-8
 
-from layer import ASR_cnn, ASR_gru
-import pickle, os
-
+import pickle, os, json
 from torch import nn, optim
 import torch
-
-batch_size = 64
-hidden_dim = 128
-mfcc_dim = 13
-
+from lookahead import Lookahead
+# from layer import ASR_cnn, ASR_gru
+# from layer_new import ASR_gru
+from layer_v9 import ASR_lstm
 from dataset import ASRDataset
+from utils import standardDate, load_dataset
 from vocab import Vocab
 # from warpctc_pytorch import CTCLoss
-
+import numpy as np
 from visdom import Visdom
-viz = Visdom(env="asr")
+import time
+viz = Visdom(env="asr", server='http://10.3.27.36', port=8097)
+assert viz.check_connection()
 # python -m visdom.server
+from tensorboardX import SummaryWriter
 
-config = {
-    "vocab_path" : "./",
-    "task" : "THCHS-30",
-    "data_path" : "data",
-    "model_path" : "./"
-}
-from utils import standardDate
 
-device = "cuda" if torch.cuda.is_available() else "cpu"
+torch.backends.cudnn.benchmark = True
+# 清华的句子平均53个字
+# 数据堂句子平均10个字
 class ASR(object):
 
     def __init__(self, config):
-        self.vocab_path = config["vocab_path"]
-        self.task = config["task"]
-        self.data_path = config["data_path"]
+        self.task = config["task_mode"]
+        self.vocab_path = config["path"]["vocab"]
+        self.model_path = config["path"]["model"]
+        self.data_path = config["path"]["data"]
+
+        self.mfcc_dim = config["mfcc_dim"]
         self.vocab = self.prepare()
-        self.data_manager = ASRDataset(self.data_path)
+        self.data_manager = ASRDataset("./")
+        self.batch_size = config["batch_size"]
 
-        # self.model = ASR_cnn(mfcc_dim, hidden_dim, self.vocab.size()).to(device)
-        self.model = ASR_gru(mfcc_dim, hidden_dim, self.vocab.size()).to(device)
-        self.criterion = nn.CTCLoss()
+        self.epochs = config["epoch_num"]
+        self.print_epoch = config["print_num"]
+
+        self.model = ASR_lstm(self.mfcc_dim, config["net"]["hidden_dim"], self.vocab.size(), device, num_layers=2).to(device)
+        print(self.model)
+        tmp = torch.zeros(8, 39, 410).to(device)
+        with SummaryWriter(comment='asr') as w:
+            w.add_graph(self.model, tmp)
+
+        # torch.cuda.empty_cache()
+        # 多GPU训练
+        # if torch.cuda.device_count() > 1:
+            # print("Let's use", torch.cuda.device_count(), "GPUs!")
+            # self.model = nn.DataParallel(self.model)
+
+        self.criterion = nn.CTCLoss() #zero_infinity=True
         # self.criterion = CTCLoss()
-        self.optimizer = optim.Adam(self.model.parameters(), lr=1e-3, weight_decay=1e-4)
-
+        opt_para = config["optimizer"]
+        self.optimizer = optim.Adam(self.model.parameters(), lr=opt_para["lr"], weight_decay=opt_para["weight_decay"])
+        self.lookahead = Lookahead(self.optimizer, k=5, alpha=0.5)
+        self.scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer, step_size=opt_para["scheduler_step_size"], gamma=0.1)
+        # self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(self.optimizer, T_max=10)
         self.min_loss = 1000.0
-        self.model_path = config["model_path"]
+
 
     def prepare(self):
+        if not os.path.exists(self.vocab_path):
+            os.mkdir(self.vocab_path)
         # 加载词表
         vocab_file = os.path.join(self.vocab_path, self.task + ".vocab")
         if os.path.exists(vocab_file):
             with open(vocab_file, 'rb') as f:
                 vocab = pickle.load(f)
         else:
-            import glob
-            filenames = glob.glob(os.path.join(self.data_path, "*.trn"))
-            vocab = Vocab(filenames, initial_tokens=["_"])
+            filenames = []
+            for dirpath, dirfiles, filename in os.walk(os.path.join(self.data_path,"train")):
+                for name in filename:
+                    if os.path.splitext(name)[-1] == ".trn":
+                        filenames.append(os.path.join(dirpath, name))
+            vocab = Vocab(self.mfcc_dim, filenames, ["_"])
             with open(vocab_file, "wb") as f:
                 pickle.dump(vocab, f)
 
@@ -62,79 +83,115 @@ class ASR(object):
 
         return vocab
 
-    def train(self):
-
-        for epoch in range(50):
-            print_loss = []
-            batch_data = self.data_manager.gen_mini_batches(mode="train", batch_size=batch_size, voc=self.vocab)
+    def train(self, restart=False):
+        if restart:
+            model_path = os.path.join(self.model_path, "asr%s_v9.bin"%self.task)
+            checkpoint = torch.load(model_path)
+            self.model.load_state_dict(checkpoint["model"])
+            self.min_loss = checkpoint["min_loss"]
+        # 30 epoch 就已经无法下降了
+        print("起始loss:%.2f"%self.min_loss)
+        writer = SummaryWriter("epoch_data")
+        for epoch in range(self.epochs):
+            print_loss = 0.0
+            train_bs_epoch = 0
+            batch_data = self.data_manager.gen_mini_batches(mode="train", batch_size=self.batch_size, voc=self.vocab)
+            # writer_bs = SummaryWriter("batch_data")
             for batch in batch_data:
-                self.optimizer.zero_grad()
 
-                X, X_length, Y, Y_length = batch
+                X, X_length, Y, Y_length, max_target_len = batch
                 X_length = X_length.to(device)
                 Y_length = Y_length.to(device)
                 X = standardDate(X, vocab=self.vocab).to(device)
-
                 Y = Y.to(device)
-                # padding
-                # bs * 13 * seq_len
-                # [bs, label_size, seq_len]
-                y_pred = self.model(X)
+                # print(X.shape)
+                # if X.size(0) != self.batch_size:
+                    # continue
 
-                # y_pred = y_pred.transpose(1, 0)
-                # y_pred = y_pred.transpose(2, 0)
-                # T, N, C => seq_len, bs, label_class
-                # (seq_len*bs*label_size, bs*label_len, )
-                # print(y_pred.size(), Y.size(), X_length.size(), Y_length.size())
-                # Y = Y.view(-1).int()
-                # X_length = X_length.int()
-                # X_length = torch.full(size=(y_pred.size(1), ), fill_value=y_pred.size(0)).cuda().int()
-                # Y_length = Y_length.int()
-                assert y_pred.type() == 'torch.cuda.FloatTensor'
+                # self.optimizer.zero_grad()
+                self.lookahead.zero_grad()
+                y_pred = self.model(X)
+                # 这可以检测一遍数据
+                if torch.any(torch.isnan(y_pred)):
+                    print("输出数据有问题")
+                    np.save("out_data_nan_%s.npy"%epoch, np.array(y_pred.cpu().tolist(), dtype=np.float32))
+                    break
+                # np.save("error_pred.npy", np.array(y_pred.cpu().tolist()))
+                # y_pred = torch.cat(y_pred.chunk(torch.cuda.device_count(), dim=0), dim=1)
+                # y_pred = y_pred.transpose(0, 1)
                 loss = self.criterion(y_pred, Y, X_length, Y_length)
-                print_loss.append(loss.item())
+                train_bs_epoch += 1
+                print_loss += loss.item()
+                # print(loss.item())
+
+                viz.line(Y=[[loss.item()]], X=[np.array(train_bs_epoch)],
+                         opts=dict(title="batch高一点", legend=["train loss"]),
+                         win="step_lr", update="append")
+                # writer_bs.add_scalar("train loss", loss.item(), train_bs_epoch)
 
                 loss.backward()
-                self.optimizer.step()
-            train_loss = sum(print_loss)/len(print_loss)
-            # print(train_loss)
-            val_data = self.data_manager.gen_mini_batches(mode="val", batch_size=batch_size, voc=self.vocab)
-            val_loss = []
+                # _ = nn.utils.clip_grad_norm_(self.model.parameters(), 50.0)
+                # self.optimizer.step()
+                self.lookahead.step()
+            # writer_bs.close()
+            train_loss = print_loss/train_bs_epoch
+            torch.cuda.empty_cache()
+            
+            val_data = self.data_manager.gen_mini_batches(mode="val", batch_size=self.batch_size, voc=self.vocab)
+            val_loss = 0.0
             with torch.no_grad():
+                val_bs_epoch = 0
                 for batch in val_data:
-                    X, X_length, Y, Y_length = batch
+                    X, X_length, Y, Y_length, max_target_len = batch
                     X_length = X_length.to(device)
                     Y_length = Y_length.to(device)
                     X = standardDate(X, vocab=self.vocab).to(device)
-
                     Y = Y.to(device)
 
+                    # if X.size(0) != self.batch_size:
+                        # continue
+
                     y_pred = self.model(X)
-                    # y_pred = y_pred.transpose(1, 0)
-                    # y_pred = y_pred.transpose(2, 0)
-                    # Y = Y.view(-1).int()
-                    # X_length = X_length.int()
-                    # Y_length = Y_length.int()
+                    # y_pred = torch.cat(y_pred.chunk(torch.cuda.device_count(), dim=0), dim=1)
+                    # y_pred = y_pred.transpose(0, 1)
                     loss = self.criterion(y_pred, Y, X_length, Y_length)
-                    val_loss.append(loss.item())
+                    val_bs_epoch += 1
+                    val_loss += loss.item()
 
+            val_l = val_loss/val_bs_epoch
+            self.scheduler.step()
 
-            val_l = sum(val_loss)/len(val_loss)
-            print("train {}, val {}".format(train_loss, val_l))
             viz.line(Y=[[train_loss, val_l]], X=[epoch],
-                    opts=dict(title="loss", legend=["train loss", "valid loss"]),
-                    win="train", update="append")
+                     opts=dict(title="epoch能否提高", legend=["train loss", "valid loss"]),
+                     win="step_lr_epoch", update="append")
+            # tensorboard
+            writer.add_scalars('epoch', {"train loss": train_loss,
+                                         "valid loss": val_l,
+                                        }, epoch)
 
+            if epoch % self.print_epoch == 0:
+                # self.scheduler.get_lr()[0]
+                print("epoch {:0>2d}, train {:.2f}, val {:.2f}, lr {}, now time {}".format(
+                    epoch, train_loss, val_l, self.optimizer.param_groups[0]['lr'],
+                    time.strftime("%m-%d %H:%M", time.localtime(time.time()))))
+
+            torch.cuda.empty_cache()
             if val_l < self.min_loss:
                 self.min_loss = val_l
-                torch.save(self.model.state_dict(), os.path.join(self.model_path, "asr_gru.tar"))
-                torch.save(self.model, os.path.join(self.model_path, "asr_gru.bin"))
+                torch.save({"model":self.model.state_dict(),
+                            "min_loss":self.min_loss},
+                           os.path.join(self.model_path, "asr%s_v9.bin"%self.task))
 
+            # torch.cuda.empty_cache()
+        writer.close()
 
 
 if __name__ == "__main__":
+    config = json.load(open("asr.json", 'r'))
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    config["device"] = device
     asr_model = ASR(config)
-    asr_model.train()
+    asr_model.train(restart=False)
 
 
 

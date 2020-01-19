@@ -27,9 +27,9 @@ def create_fields(opt):
     
     spacy_langs = ['en', 'fr', 'de', 'es', 'pt', 'it', 'nl']
     if opt.src_lang not in spacy_langs:
-        print('invalid src language: ' + opt.src_lang + 'supported languages : ' + spacy_langs)  
+        print('invalid src language: ' + opt.src_lang + 'supported languages : ' + str(spacy_langs))
     if opt.trg_lang not in spacy_langs:
-        print('invalid trg language: ' + opt.trg_lang + 'supported languages : ' + spacy_langs)
+        print('invalid trg language: ' + opt.trg_lang + 'supported languages : ' + str(spacy_langs))
     
     print("loading spacy tokenizers...")
     
@@ -42,7 +42,7 @@ def create_fields(opt):
     if opt.load_weights is not None:
         try:
             print("loading presaved fields...")
-            SRC = pickle.load(open('{}/SRC.pkl'.format(opt.load_weights), 'rb'))
+            SRC = pickle.load(open(os.path.join(opt.load_weights, 'SRC.pkl'), 'rb'))
             TRG = pickle.load(open('{}/TRG.pkl'.format(opt.load_weights), 'rb'))
         except:
             print("error opening SRC.pkl and TRG.pkl field files, please ensure they are in " + opt.load_weights + "/")

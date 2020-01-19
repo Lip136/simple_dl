@@ -9,21 +9,14 @@ from predict import Chatbot
 import json
 app = flask.Flask(__name__)
 
-
-def load_model():
-    """
-    Load the pre-trained model
-    :return: 
-    """
-    global model
-    config = json.load(open("chatbot.json", "r"))
-    model = Chatbot(config)
-
+# load model
+config = json.load(open("chatbot.json", "r"))
+model = Chatbot(config)
+print(model)
 
 def prepare_seq(input_seq):
 
     result = model.evalModel(input_seq)
-
     return result
 
 @app.route("/predict/", methods=["POST"])
@@ -32,18 +25,15 @@ def predict():
     data = {"success": False}
     if flask.request.method == "POST":
 
-        message = flask.request.form["message"]
+        message = flask.request.form.get("message")
         result = prepare_seq(message)
         print(message, result)
         data["result"] = result
         data["success"] = True
     return flask.jsonify(data)
 
-def main():
-    load_model()
-    app.run()
 
 if __name__ == '__main__':
-    main()
+    app.run()
 
 

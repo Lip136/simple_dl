@@ -28,7 +28,7 @@ class MultiHeadsAttention(nn.Module):
         q = self.q_linear(q).view(batch_szie, -1, self.heads, self.d_k)
         v = self.v_linear(v).view(batch_szie, -1, self.heads, self.d_k)
 
-        # transpose to get dimensions bs * h * sl * d_model
+        # transpose to get dimensions bs * h * sl * d_k
         k = k.transpose(1, 2)
         q = q.transpose(1, 2)
         v = v.transpose(1, 2)

@@ -6,7 +6,7 @@ import torch
 import torch.nn as nn
 from transformer import models
 
-from Process import *
+from Process import read_data, create_fields, create_dataset
 import torch.nn.functional as F
 from Optim import CosineWithRestarts
 from Batch import create_masks
@@ -84,10 +84,10 @@ def main():
     parser.add_argument('-batchsize', type=int, default=1500)
     parser.add_argument('-printevery', type=int, default=100)
     parser.add_argument('-lr', type=int, default=0.0001)
-    parser.add_argument('-load_weights', default='./weights/') #
+    parser.add_argument('-load_weights')
     parser.add_argument('-create_valset', action='store_true')
     parser.add_argument('-max_strlen', type=int, default=200)
-    parser.add_argument('-floyd', action='store_true', default=True)
+    parser.add_argument('-floyd', action='store_true', default=True) #
     parser.add_argument('-checkpoint', type=int, default=15)
 
     hyper_para = parser.parse_args()
@@ -100,18 +100,19 @@ def main():
     SRC, TRG = create_fields(hyper_para)
     hyper_para.train = create_dataset(hyper_para, SRC, TRG)
     model = models.get_model(hyper_para, len(SRC.vocab), len(TRG.vocab)).to("cuda")
-
+    print(hyper_para.train_len)
     hyper_para.optimizer = torch.optim.Adam(model.parameters(), lr=hyper_para.lr, betas=(0.9, 0.98), eps=1e-9)
     if hyper_para.SGDR == True:
         hyper_para.sched = CosineWithRestarts(hyper_para.optimizer, T_max=hyper_para.train_len)
 
     if hyper_para.checkpoint > 0:
         print("model weights will be saved every %d minutes and at end of epoch to directory weights/"%(hyper_para.checkpoint))
-    
-    # if hyper_para.load_weights is None:
-    #     os.mkdir('weights')
-    #     pickle.dump(SRC, open('weights/SRC.pkl', 'wb'))
-    #     pickle.dump(TRG, open('weights/TRG.pkl', 'wb'))
+
+    if hyper_para.load_weights is None:
+        import os
+        os.mkdir('weights')
+        pickle.dump(SRC, open('weights/SRC.pkl', 'wb'))
+        pickle.dump(TRG, open('weights/TRG.pkl', 'wb'))
     
     train_model(model, hyper_para)
 

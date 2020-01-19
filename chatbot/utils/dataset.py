@@ -104,7 +104,7 @@ class ChatDataset(object):
 
     # Returns all items for a given batch of pairs
     def _one_mini_batch(self, voc, pair_batch):
-        # 按照输入的句子中词的个数排序，大的在前面
+        # 按照输入的句子中词的个数排序，大的在前面，由于torch.pack_padded_sequence接受的是降序的batch
         pair_batch.sort(key=lambda x: len(x["question"]), reverse=True)
         input_batch, output_batch = [], []
         for pair in pair_batch:

@@ -3,7 +3,8 @@
 import torch
 import os
 import json
-from utils import vocab, dataset
+# from utils import vocab, dataset
+import vocab, dataset
 import pickle
 
 # Configure training/optimization
@@ -56,6 +57,7 @@ class Chatbot(object):
 
     # TODO: eval
     def GreedySearchDecoder(self, input_seq, input_length, max_length):
+
         encoder_outputs, encoder_hidden = self.encoder(input_seq, input_length)
 
         decoder_hidden = encoder_hidden[:self.decoder.n_layers]

@@ -1,31 +1,35 @@
+# encoding:utf-8
 import torch
 from torchtext import data
 import numpy as np
-from torch.autograd import Variable
+# from torch.autograd import Variable
 
 
-def nopeak_mask(size, opt):
-    np_mask = np.triu(np.ones((1, size, size)),
-    k=1).astype('uint8')
-    np_mask =  Variable(torch.from_numpy(np_mask) == 0)
-    if opt.device == "cuda":
-      np_mask = np_mask.cuda()
+def nopeak_mask(size, config):
+    # 上三角
+    np_mask = np.triu(np.ones((1, size, size)),k=1).astype('uint8')
+    # 下三角
+    np_mask =  torch.from_numpy(np_mask) == 0
+
+    if config.device == "cuda":
+        np_mask = np_mask.cuda()
     return np_mask
 
-def create_masks(src, trg, opt):
+def create_masks(source, target, config):
     
-    src_mask = (src != opt.src_pad).unsqueeze(-2)
-
-    if trg is not None:
-        trg_mask = (trg != opt.trg_pad).unsqueeze(-2)
-        size = trg.size(1) # get seq_len for matrix
-        np_mask = nopeak_mask(size, opt)
-        if trg.is_cuda:
+    src_mask = (source != config.src_pad).unsqueeze(-2)
+    # (bs, 1, seq_len)
+    if target is not None:
+        trg_mask = (target != config.trg_pad).unsqueeze(-2)
+        size = target.size(1) # get seq_len for matrix
+        np_mask = nopeak_mask(size, config)
+        if target.is_cuda:
             np_mask = np_mask.cuda()
         trg_mask = trg_mask & np_mask
         
     else:
         trg_mask = None
+    # (bs, seq_len, seq_len)
     return src_mask, trg_mask
 
 # patch on Torchtext's batching process that makes it more efficient

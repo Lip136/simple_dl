@@ -69,7 +69,8 @@ class Transformer(nn.Module):
         output = self.out(d_outputs)
         return output
 
-# we don't perform softmax on the output as this will be handled automatically by our loss function
+# we don't perform softmax on the output as this will be handled
+# automatically by our loss function
 
 def get_model(config):
     assert config["emb_dim"] % config["heads"] == 0

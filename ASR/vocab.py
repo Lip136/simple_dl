@@ -6,12 +6,7 @@
 3.获取size
 4.句子映射
 """
-
-import numpy as np
-import re, os
-import torch
-from torch import nn
-from tqdm import tqdm
+import os
 import pickle
 import utils
 
@@ -19,7 +14,7 @@ class Vocab(object):
     """
     Implements a vocabulary to store the tokens in the data, with their corresponding embeddings.
     """
-    def __init__(self, filenames=None, initial_tokens=None, lower=False):
+    def __init__(self, mfcc_dim, filenames=None, initial_tokens=None, lower=False):
         self.id2token = {}
         self.token2id = {}
         self.token_cnt = {}
@@ -34,13 +29,17 @@ class Vocab(object):
 
         self.initial_tokens = initial_tokens if initial_tokens is not None else []
         # self.initial_tokens.extend([self.PAD_token, self.SOS_token, self.EOS_token, self.unk_token])
+
+        self.initial_tokens.extend([self.unk_token])
         for token in self.initial_tokens:
             self.add(token)
 
         if filenames is not None:
             for filename in filenames:
                 self.load_from_file(filename)
-            self.audio_mean, self.audio_std = utils.get_standard_params(filenames)
+            # 明天来把这改了
+            self.audio_mean, self.audio_std = utils.get_standard_params(filenames, mfcc_dim)
+
 
 
     def size(self):
@@ -157,11 +156,19 @@ class Vocab(object):
 
 
 if __name__ == "__main__":
-    import glob
-    filenames = glob.glob(os.path.join("data", "*.trn"))
+    # import glob
+    # filenames = glob.glob(os.path.join("data", "*.trn"))
+    # root = "/home/hg/data/aidatatang_200zh/corpus/train"
+    root = "/home/user/nlp/asr/aidatatang_200zh/corpus/train"
+    filenames = []
+    for dirpath, dirfiles, filename in os.walk(root):
+        for name in filename:
+            if os.path.splitext(name)[-1] == ".trn":
+                filenames.append(os.path.join(dirpath, name))
+
     vocab = Vocab(filenames, initial_tokens=["_"])
     print(vocab.size())
     print(vocab.audio_mean, vocab.audio_std)
-    with open("THCHS-30_new.vocab", "wb") as f:
-        pickle.dump(vocab, f)
+    # with open("aidatatang-200.vocab", "wb") as f:
+    #     pickle.dump(vocab, f)
 
