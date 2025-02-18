@@ -1,0 +1,32 @@
+[SwitchyOmega Conditions]
+@with result
+
+*.github.com +proxy
+*.raw.githubusercontent.com +proxy
+*.cookielaw.org +proxy
+*.segment.com +proxy
+*.6sc.co +proxy
+*.marketo.net +proxy
+*.googletagmanager.com +proxy
+*.dockerstatic.com +proxy
+*.docker.com +proxy
+*.djeqr6to3dedg.cloudfront.net +proxy
+*.gravatar.com +proxy
+*.jnn-pa.googleapis.com +proxy
+*.gstatic.com +proxy
+*.youtube.com +proxy
+*.ytimg.com +proxy
+*.jsdelivr.net +proxy
+*.oaistatic.com +proxy
+*.github.io +proxy
+*.v2raya.org +proxy
+*.v2ex.com +proxy
+*.avatars.githubusercontent.com +proxy
+*.wsj.net +proxy
+*.chatgpt.com +proxy
+*.googleusercontent.com +proxy
+*.google.com +proxy
+*.openai.com +proxy
+127.0.0.1 +direct
+
+* +direct
